@@ -193,72 +193,82 @@ async function fetchBlogPosts() {
     }
 }
 
-// Fetch the content of the blog post
+/**
+ * Fetch and display a blog post's content
+ * @param {Object} post - Blog post metadata
+ * @returns {Promise<string>} HTML content of the blog post
+ */
 async function fetchBlogContent(post) {
     try {
         // Handle both relative and absolute paths
         let filePath = post.path;
         let fullUrl;
         
-        // Create proper GitHub Pages URL
+        // Create GitHub Pages URL
         if (window.location.hostname.includes('github.io')) {
-            // On GitHub Pages - construct the absolute URL
-            const repoBase = window.location.origin;
+            // Direct fetch from GitHub raw content
+            const ghUsername = 'gourikartha';
+            const ghRepo = 'gourikartha.github.io';
             
-            // If the path starts with /, remove it
+            // Remove leading slash if present
             if (filePath.startsWith('/')) {
                 filePath = filePath.substring(1);
             }
             
-            fullUrl = `${repoBase}/${filePath}`;
+            // Use raw.githubusercontent.com for direct content access
+            fullUrl = `https://raw.githubusercontent.com/${ghUsername}/${ghRepo}/main/${filePath}`;
+            console.log(`Trying to fetch blog from GitHub raw content: ${fullUrl}`);
         } else {
             // Local development
             if (filePath.startsWith('/')) {
                 filePath = filePath.substring(1);
             }
             fullUrl = new URL(filePath, window.location.origin).href;
+            console.log(`Trying to fetch blog locally: ${fullUrl}`);
         }
         
-        console.log(`Trying to fetch blog content: ${fullUrl}`);
-        
-        // Try to fetch the actual content
         const response = await fetch(fullUrl);
         
         if (!response.ok) {
-            throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+            console.error(`Failed to fetch blog ${fullUrl}: ${response.status} ${response.statusText}`);
+            throw new Error(`Failed to fetch blog: ${response.status} ${response.statusText}`);
         }
         
         const content = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(content, 'text/html');
         
-        // Try to extract the article content
-        const articleContent = doc.querySelector('article');
-        if (articleContent) {
-            return articleContent.innerHTML;
+        // Process Markdown files
+        if (post.path.endsWith('.md')) {
+            // Remove frontmatter and convert to HTML
+            const cleanContent = content.replace(/---[\s\S]*?---/, '').trim();
+            const html = marked.parse(cleanContent);
+            
+            return html;
         }
         
-        // If no article tag is found, try to extract the body content
-        const bodyContent = doc.querySelector('body');
-        if (bodyContent) {
-            // Check if the body has any direct children elements like article, div, etc.
-            if (bodyContent.children.length > 0) {
-                let innerHTML = '';
-                Array.from(bodyContent.children).forEach(child => {
-                    if (child.tagName.toLowerCase() !== 'script') {
-                        innerHTML += child.outerHTML;
-                    }
-                });
-                return innerHTML;
+        // Process HTML files (if any)
+        let htmlContent = content;
+        
+        // Extract content from article tag if available
+        const articleMatch = htmlContent.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+        if (articleMatch && articleMatch[1]) {
+            htmlContent = articleMatch[1];
+        } else {
+            // Extract content from body tag if available
+            const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+            if (bodyMatch && bodyMatch[1]) {
+                // Filter out any script tags
+                htmlContent = bodyMatch[1].replace(/<script[\s\S]*?<\/script>/gi, '');
             }
-            return bodyContent.innerHTML;
         }
         
-        // If all else fails, return the entire content
-        return content;
+        return htmlContent;
     } catch (error) {
         console.error('Error fetching blog content:', error);
-        throw error;
+        return `<div class="error-message">
+                    <h3>Error Loading Blog Post</h3>
+                    <p>Could not load the blog post content. Please try again later.</p>
+                    <p class="error-details">${error.message || 'Unknown error'}</p>
+                </div>`;
     }
 }
 
