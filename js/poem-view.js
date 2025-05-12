@@ -193,7 +193,33 @@ async function loadPoemPost() {
 async function fetchPoemPosts() {
     try {
         // Use the poem loader to fetch posts
-        const posts = await poemLoader.fetchPosts();
+        let posts = await poemLoader.fetchPosts();
+        
+        console.log('Raw posts fetched:', posts.length);
+        
+        // Check if posts might be in a different format (inside a posts property)
+        if (posts.length === 0) {
+            // Try fetching the raw index.json directly and handle different formats
+            const isGitHubPages = window.location.hostname.includes('github.io');
+            const indexUrl = isGitHubPages ? 
+                `https://${location.host}/${poemLoader.path}/index.json` : 
+                `${poemLoader.path}/index.json`;
+            
+            console.log(`Trying direct fetch from: ${indexUrl}`);
+            
+            try {
+                const response = await fetch(indexUrl);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && typeof data === 'object' && Array.isArray(data.posts)) {
+                        console.log('Found posts property in direct fetch, using that array');
+                        posts = data.posts;
+                    }
+                }
+            } catch (err) {
+                console.warn('Error in direct fetch attempt:', err);
+            }
+        }
         
         // For each post, make sure it has a slug
         posts.forEach(post => {
@@ -234,18 +260,30 @@ async function fetchPoemContent(post) {
             const ghUsername = 'gourikartha';
             const ghRepo = 'gourikartha.github.io';
             
-            // Remove leading slash if present
-            if (filePath.startsWith('/')) {
+            // Fix path handling for GitHub Pages
+            if (filePath.startsWith('./')) {
+                // Remove the leading ./ which causes issues with raw.githubusercontent.com
+                filePath = filePath.substring(2);
+            } else if (filePath.startsWith('/')) {
                 filePath = filePath.substring(1);
             }
+            
+            // Log the final path for debugging
+            console.log(`Final path for GitHub fetch: ${filePath}`);
             
             // Use raw.githubusercontent.com for direct content access
             fullUrl = `https://raw.githubusercontent.com/${ghUsername}/${ghRepo}/main/${filePath}`;
             console.log(`Trying to fetch poem from GitHub raw content: ${fullUrl}`);
+            
+            // Fallback URL in case the main branch name is different
+            const fallbackUrl = `https://${ghUsername}.github.io/${filePath}`;
+            console.log(`Fallback URL if needed: ${fallbackUrl}`);
         } else {
             // Local development
             if (filePath.startsWith('/')) {
                 filePath = filePath.substring(1);
+            } else if (filePath.startsWith('./')) {
+                filePath = filePath.substring(2);
             }
             fullUrl = new URL(filePath, window.location.origin).href;
             console.log(`Trying to fetch poem locally: ${fullUrl}`);
@@ -254,7 +292,15 @@ async function fetchPoemContent(post) {
         console.log('Fetching poem from path:', filePath);
         console.log('Full URL constructed:', fullUrl);
         
-        const response = await fetch(fullUrl);
+        let response = await fetch(fullUrl);
+        
+        // If the first URL fails and we're on GitHub Pages, try the fallback
+        if (!response.ok && window.location.hostname.includes('github.io')) {
+            const ghUsername = 'gourikartha';
+            const fallbackUrl = `https://${ghUsername}.github.io/${filePath}`;
+            console.log(`First attempt failed, trying fallback URL: ${fallbackUrl}`);
+            response = await fetch(fallbackUrl);
+        }
         
         if (!response.ok) {
             console.error(`Failed to fetch poem ${fullUrl}: ${response.status} ${response.statusText}`);
