@@ -1,6 +1,6 @@
 // Constants
-const GITHUB_USERNAME = 'govindkartha'; // Your actual GitHub username
-const REPO_NAME = 'webs'; // The repository name
+const GITHUB_USERNAME = 'gourikartha'; // Your actual GitHub username
+const REPO_NAME = 'gourikartha.github.io'; // The repository name
 const BLOGS_PATH = 'blogs'; // Path to your blogs folder in the repository
 
 // Initialize blog loaders
