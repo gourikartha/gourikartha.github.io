@@ -195,81 +195,83 @@ async function fetchPoemPosts() {
     }
 }
 
-// Fetch the content of the poem post
+/**
+ * Fetch and display a poem's content
+ * @param {Object} post - Poem metadata
+ * @returns {Promise<string>} HTML content of the poem
+ */
 async function fetchPoemContent(post) {
     try {
         // Handle both relative and absolute paths
         let filePath = post.path;
         let fullUrl;
         
-        // Create proper GitHub Pages URL
+        // Create GitHub Pages URL
         if (window.location.hostname.includes('github.io')) {
-            // On GitHub Pages - construct the absolute URL
-            const repoBase = window.location.origin;
+            // Direct fetch from GitHub raw content
+            const ghUsername = 'gourikartha';
+            const ghRepo = 'gourikartha.github.io';
             
-            // If the path starts with /, remove it
+            // Remove leading slash if present
             if (filePath.startsWith('/')) {
                 filePath = filePath.substring(1);
             }
             
-            fullUrl = `${repoBase}/${filePath}`;
+            // Use raw.githubusercontent.com for direct content access
+            fullUrl = `https://raw.githubusercontent.com/${ghUsername}/${ghRepo}/main/${filePath}`;
+            console.log(`Trying to fetch poem from GitHub raw content: ${fullUrl}`);
         } else {
             // Local development
             if (filePath.startsWith('/')) {
                 filePath = filePath.substring(1);
             }
             fullUrl = new URL(filePath, window.location.origin).href;
+            console.log(`Trying to fetch poem locally: ${fullUrl}`);
         }
         
-        console.log(`Trying to fetch poem: ${fullUrl}`);
-        
-        // Try to fetch the actual content
         const response = await fetch(fullUrl);
         
         if (!response.ok) {
-            throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+            console.error(`Failed to fetch poem ${fullUrl}: ${response.status} ${response.statusText}`);
+            throw new Error(`Failed to fetch poem: ${response.status} ${response.statusText}`);
         }
         
         const content = await response.text();
         
-        // Check if it's a Markdown file
-        if (post.name.endsWith('.md')) {
-            // For Markdown files, extract frontmatter and convert to HTML
-            const cleanContent = content.replace(/^---\n([\s\S]*?)\n---\n/, ''); // Remove frontmatter
-            return convertMarkdownToHtml(cleanContent);
+        // Process Markdown files
+        if (post.path.endsWith('.md')) {
+            // Remove frontmatter and convert to HTML
+            const cleanContent = content.replace(/---[\s\S]*?---/, '').trim();
+            const html = marked.parse(cleanContent);
+            
+            // Wrap the poem in the appropriate container
+            return `<div class="poem-markdown-content">${html}</div>`;
         }
         
-        // For HTML files, try to extract the content
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(content, 'text/html');
+        // Process HTML files (if any)
+        let htmlContent = content;
         
-        // Try to extract the article content
-        const articleContent = doc.querySelector('article');
-        if (articleContent) {
-            return articleContent.innerHTML;
-        }
-        
-        // If no article tag is found, try to extract the body content
-        const bodyContent = doc.querySelector('body');
-        if (bodyContent) {
-            // Check if the body has any direct children elements like article, div, etc.
-            if (bodyContent.children.length > 0) {
-                let innerHTML = '';
-                Array.from(bodyContent.children).forEach(child => {
-                    if (child.tagName.toLowerCase() !== 'script') {
-                        innerHTML += child.outerHTML;
-                    }
-                });
-                return innerHTML;
+        // Extract content from article tag if available
+        const articleMatch = htmlContent.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+        if (articleMatch && articleMatch[1]) {
+            htmlContent = articleMatch[1];
+        } else {
+            // Extract content from body tag if available
+            const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+            if (bodyMatch && bodyMatch[1]) {
+                // Filter out any script tags
+                htmlContent = bodyMatch[1].replace(/<script[\s\S]*?<\/script>/gi, '');
             }
-            return bodyContent.innerHTML;
         }
         
-        // If all else fails, return the entire content
-        return content;
+        return htmlContent;
     } catch (error) {
         console.error('Error fetching poem content:', error);
-        throw error;
+        return `<div class="error-message">
+                    <h3>Error Loading Poem</h3>
+                    <p>Could not load the poem content. Please try again later.</p>
+                    <p class="error-details">${error.message || 'Unknown error'}</p>
+                </div>`;
     }
 }
 
