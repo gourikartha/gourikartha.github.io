@@ -8,8 +8,19 @@ class GitHubBlogLoader {
         this.username = username;
         this.repo = repo;
         this.path = path;
-        this.apiUrl = `https://api.github.com/repos/${username}/${repo}/contents/${path}`;
-        this.rawContentUrl = `https://raw.githubusercontent.com/${username}/${repo}/main/${path}`;
+        
+        // For GitHub Pages, use direct URLs to the raw content
+        if (repo.endsWith('.github.io')) {
+            // This is a GitHub Pages site, use URLs relative to the current domain
+            this.apiUrl = `https://${username}.github.io/${path}`;
+            this.rawContentUrl = `https://${username}.github.io/${path}`;
+        } else {
+            // Standard GitHub repository
+            this.apiUrl = `https://api.github.com/repos/${username}/${repo}/contents/${path}`;
+            this.rawContentUrl = `https://raw.githubusercontent.com/${username}/${repo}/main/${path}`;
+        }
+        
+        console.log(`GitHubBlogLoader initialized with API URL: ${this.apiUrl}`);
     }
 
     /**
@@ -468,10 +479,22 @@ class LocalBlogLoader {
      */
     async processBlogFile(file) {
         try {
-            const response = await fetch(file.path);
+            // Handle both relative and absolute paths
+            let filePath = file.path;
+            
+            // If the path is absolute (starts with /), make it relative to the current domain
+            if (filePath.startsWith('/')) {
+                filePath = filePath.substring(1); // Remove the leading slash
+            }
+            
+            // For GitHub Pages compatibility, get the full URL
+            const fullUrl = new URL(filePath, window.location.origin).href;
+            console.log(`Trying to fetch: ${fullUrl}`);
+            
+            const response = await fetch(fullUrl);
             
             if (!response.ok) {
-                console.error(`Failed to fetch file ${file.path}: ${response.status} ${response.statusText}`);
+                console.error(`Failed to fetch file ${fullUrl}: ${response.status} ${response.statusText}`);
                 throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
             }
             
@@ -486,9 +509,9 @@ class LocalBlogLoader {
             
             try {
                 if (isMarkdown) {
-                    return this.processMarkdownFile({ ...file, id, date: postDate }, content);
+                    return this.processMarkdownFile({ ...file, id, date: postDate, path: fullUrl }, content);
                 } else {
-                    return this.processHtmlFile({ ...file, id, date: postDate }, content);
+                    return this.processHtmlFile({ ...file, id, date: postDate, path: fullUrl }, content);
                 }
             } catch (processingError) {
                 console.error(`Error processing content for ${file.name}:`, processingError);
@@ -504,7 +527,7 @@ class LocalBlogLoader {
                     image: 'images/blog-placeholder.jpg',
                     tags: [],
                     slug: file.name.replace(/\.(html|md)$/, ''),
-                    path: file.path,
+                    path: fullUrl,
                     content: `<h2>${file.title || file.name}</h2><p>Content could not be fully loaded.</p>`
                 };
             }
@@ -691,6 +714,7 @@ class LocalBlogLoader {
         html = html.replace(/^\d+\. (.*$)/gm, '<li>$1</li>');
         
         // Handle paragraphs
+        // This split-join approach ensures that code blocks and lists aren't affected
         const paragraphs = html.split('\n\n').map(p => {
             if (
                 !p.startsWith('<h') && 
@@ -710,30 +734,8 @@ class LocalBlogLoader {
         
         return paragraphs.join('\n\n');
     }
-
-    /**
-     * Generate an excerpt from markdown content
-     * @param {string} markdown - The markdown content
-     * @returns {string} Generated excerpt
-     */
-    generateExcerptFromMarkdown(markdown) {
-        // Remove code blocks, headers, etc.
-        const cleanText = markdown
-            .replace(/```[\s\S]*?```/g, '')
-            .replace(/^#+\s.*$/gm, '')
-            .replace(/!\[.*?\]\(.*?\)/g, '');
-        
-        // Find the first paragraph-like text
-        const match = cleanText.match(/^[^#\n].+/m);
-        if (match) {
-            return match[0].substring(0, 150) + '...';
-        }
-        
-        // Fallback: just take the first 150 characters
-        return cleanText.trim().substring(0, 150) + '...';
-    }
 }
 
 // Export both loaders
 window.GitHubBlogLoader = GitHubBlogLoader;
-window.LocalBlogLoader = LocalBlogLoader; 
+window.LocalBlogLoader = LocalBlogLoader;
