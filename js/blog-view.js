@@ -196,8 +196,33 @@ async function fetchBlogPosts() {
 // Fetch the content of the blog post
 async function fetchBlogContent(post) {
     try {
+        // Handle both relative and absolute paths
+        let filePath = post.path;
+        let fullUrl;
+        
+        // Create proper GitHub Pages URL
+        if (window.location.hostname.includes('github.io')) {
+            // On GitHub Pages - construct the absolute URL
+            const repoBase = window.location.origin;
+            
+            // If the path starts with /, remove it
+            if (filePath.startsWith('/')) {
+                filePath = filePath.substring(1);
+            }
+            
+            fullUrl = `${repoBase}/${filePath}`;
+        } else {
+            // Local development
+            if (filePath.startsWith('/')) {
+                filePath = filePath.substring(1);
+            }
+            fullUrl = new URL(filePath, window.location.origin).href;
+        }
+        
+        console.log(`Trying to fetch blog content: ${fullUrl}`);
+        
         // Try to fetch the actual content
-        const response = await fetch(post.path);
+        const response = await fetch(fullUrl);
         
         if (!response.ok) {
             throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
