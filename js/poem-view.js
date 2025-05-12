@@ -44,16 +44,16 @@ function addDebugInfo(container) {
                 
                 if (response.ok) {
                     response.json().then(data => {
-                        if (data && data.posts) {
-                            debugLog.innerHTML = `Index file loaded successfully. Contains ${data.posts.length} posts.`;
-                            const slugs = data.posts.map(p => p.name.replace(/\.(html|md)$/, '')).join(', ');
+                        if (Array.isArray(data)) {
+                            debugLog.innerHTML = `Index file loaded successfully. Contains ${data.length} posts.`;
+                            const slugs = data.map(p => p.slug || p.name?.replace(/\.(html|md)$/, '')).join(', ');
                             
                             const slugsList = document.createElement('div');
                             slugsList.className = 'debug-log';
                             slugsList.innerHTML = `Available slugs: ${slugs}`;
                             debugSection.appendChild(slugsList);
                         } else {
-                            debugLog.innerHTML = 'Index file found but has no posts data';
+                            debugLog.innerHTML = 'Index file found but data is not in expected array format';
                             debugLog.classList.add('error-log');
                         }
                     }).catch(err => {
@@ -90,12 +90,25 @@ async function loadPoemPost() {
             return;
         }
         
+        console.log('Looking for poem with slug:', slug);
+        
         // Show loading state
         poemContent.innerHTML = '<p class="loading">Loading poem content...</p>';
         
         // Get all poem posts
         const posts = await fetchPoemPosts();
         console.log('Fetched all poem posts:', posts.length);
+        
+        // Debug - log all available posts and their slugs
+        posts.forEach(post => {
+            console.log(`Available post: ${post.title}, Slug: ${post.slug || 'undefined'}, File: ${post.name}`);
+            
+            // Check for blog-slug property as a fallback
+            if (!post.slug && post['blog-slug']) {
+                console.log(`Found blog-slug property: ${post['blog-slug']}`);
+                post.slug = post['blog-slug'];
+            }
+        });
         
         // Find the current post by slug
         const currentPost = posts.find(post => post.slug === slug);
@@ -115,6 +128,7 @@ async function loadPoemPost() {
             return;
         }
         
+        console.log('Found poem post:', currentPost);
         
         // Update page title
         document.title = `${currentPost.title} - Gouri Kartha`;
@@ -179,12 +193,20 @@ async function loadPoemPost() {
 async function fetchPoemPosts() {
     try {
         // Use the poem loader to fetch posts
-        const posts = await poemLoader.fetchBlogPosts();
+        const posts = await poemLoader.fetchPosts();
         
         // For each post, make sure it has a slug
         posts.forEach(post => {
             if (!post.slug) {
-                post.slug = post.name ? post.name.replace(/\.(html|md)$/, '') : '';
+                // Try to get slug from blog-slug first
+                if (post['blog-slug']) {
+                    post.slug = post['blog-slug'];
+                    console.log(`Using blog-slug for post: ${post.title}, slug: ${post.slug}`);
+                } else {
+                    // Fallback to filename
+                    post.slug = post.name ? post.name.replace(/\.(html|md)$/, '') : '';
+                    console.log(`Using filename as slug: ${post.slug}`);
+                }
             }
         });
         
@@ -229,6 +251,9 @@ async function fetchPoemContent(post) {
             console.log(`Trying to fetch poem locally: ${fullUrl}`);
         }
         
+        console.log('Fetching poem from path:', filePath);
+        console.log('Full URL constructed:', fullUrl);
+        
         const response = await fetch(fullUrl);
         
         if (!response.ok) {
@@ -237,11 +262,18 @@ async function fetchPoemContent(post) {
         }
         
         const content = await response.text();
+        console.log('Poem content length:', content.length);
         
         // Process Markdown files
         if (post.path.endsWith('.md')) {
             // Remove frontmatter and convert to HTML
             const cleanContent = content.replace(/---[\s\S]*?---/, '').trim();
+            
+            if (!window.marked) {
+                console.error('Marked library not loaded');
+                return `<div class="error">Markdown parser not loaded. Please add <code>marked.js</code> to your page.</div>`;
+            }
+            
             const html = marked.parse(cleanContent);
             
             // Wrap the poem in the appropriate container
@@ -267,6 +299,7 @@ async function fetchPoemContent(post) {
         return htmlContent;
     } catch (error) {
         console.error('Error fetching poem content:', error);
+        console.error('Error stack:', error.stack);
         return `<div class="error-message">
                     <h3>Error Loading Poem</h3>
                     <p>Could not load the poem content. Please try again later.</p>
