@@ -101,26 +101,28 @@ class GitHubBlogLoader {
             let filePath = file.path;
             let fullUrl;
             
-            // Create proper GitHub Pages URL
+            // Create GitHub Pages URL
             if (window.location.hostname.includes('github.io')) {
-                // On GitHub Pages - construct the absolute URL
-                const repoBase = window.location.origin;
+                // Direct fetch from GitHub raw content
+                const ghUsername = 'gourikartha';
+                const ghRepo = 'gourikartha.github.io';
                 
-                // If the path starts with /, remove it
+                // Remove leading slash if present
                 if (filePath.startsWith('/')) {
                     filePath = filePath.substring(1);
                 }
                 
-                fullUrl = `${repoBase}/${filePath}`;
+                // Use raw.githubusercontent.com for direct content access
+                fullUrl = `https://raw.githubusercontent.com/${ghUsername}/${ghRepo}/main/${filePath}`;
+                console.log(`Trying to fetch from GitHub raw content: ${fullUrl}`);
             } else {
                 // Local development
                 if (filePath.startsWith('/')) {
                     filePath = filePath.substring(1);
                 }
                 fullUrl = new URL(filePath, window.location.origin).href;
+                console.log(`Trying to fetch locally: ${fullUrl}`);
             }
-            
-            console.log(`Trying to fetch: ${fullUrl}`);
             
             const response = await fetch(fullUrl);
             
@@ -407,131 +409,52 @@ class LocalBlogLoader {
     }
 
     /**
-     * Fetch all blog posts from the local blogs directory
-     * @returns {Promise<Array>} Array of blog post objects
+     * Fetch blog posts from local directory or GitHub Pages index.json
+     * @returns {Promise<Array>} Array of blog posts
      */
-    async fetchBlogPosts() {
+    async fetchPosts() {
         try {
+            // Determine if we're on GitHub Pages
+            const isGitHubPages = window.location.hostname.includes('github.io');
+            let indexUrl;
+
+            if (isGitHubPages) {
+                // On GitHub Pages, use raw githubusercontent URL to fetch index.json
+                const ghUsername = 'gourikartha';
+                const ghRepo = 'gourikartha.github.io';
+                indexUrl = `https://raw.githubusercontent.com/${ghUsername}/${ghRepo}/main/blogs/index.json`;
+            } else {
+                // Local development
+                indexUrl = new URL('blogs/index.json', window.location.origin).href;
+            }
+
+            console.log(`Fetching blog index from: ${indexUrl}`);
+            const response = await fetch(indexUrl);
             
-            // First try to load the index file which should list all blog posts
-            try {
-                const indexResponse = await fetch(this.indexFile);
-                if (!indexResponse.ok) {
-                    console.error(`Failed to load blog index file: ${indexResponse.status} ${indexResponse.statusText}`);
-                    throw new Error(`Index file not found: ${this.indexFile}`);
-                }
-                
-                // Parse the index file to get the list of blog posts
-                const blogIndex = await indexResponse.json();
-                
-                if (!blogIndex.posts || !Array.isArray(blogIndex.posts) || blogIndex.posts.length === 0) {
-                    console.warn('Blog index file contains no posts or is malformed');
-                    throw new Error('Blog index file contains no posts');
-                }
-                
-                
-                // Ensure file extensions are captured correctly
-                blogIndex.posts.forEach(post => {
-                    // Make sure we can detect if it's a markdown file
-                    post.isMarkdown = post.name.endsWith('.md');
-                });
-                
-                // Process each blog file
-                const blogPosts = await Promise.all(
-                    blogIndex.posts.map(async (file) => {
-                        try {
-                            return await this.processBlogFile(file);
-                        } catch (error) {
-                            console.warn(`Skipping file ${file.name} - not found or error:`, error);
-                            return null;
-                        }
-                    })
-                );
-                
-                // Filter out any null entries (files that weren't found) and sort by date
-                const posts = blogPosts
-                    .filter(post => post !== null)
-                    .sort((a, b) => new Date(b.date) - new Date(a.date));
-                
-                console.log(`Successfully processed ${posts.length} posts`);
-                posts.forEach(post => {
-                    console.log(`- ${post.title} (${post.date}) - Path: ${post.path}`);
-                });
-                
-                if (posts.length > 0) {
-                    return posts;
-                }
-                
-                console.warn('No valid posts could be loaded from index file');
-            } catch (indexError) {
-                console.warn('Error with index file, trying hardcoded posts:', indexError);
+            if (!response.ok) {
+                console.error(`Failed to fetch blogs index: ${response.status} ${response.statusText}`);
+                throw new Error(`Failed to fetch blogs index: ${response.status} ${response.statusText}`);
             }
             
-            // If we get here, either the index file failed or no posts were loaded
-            // Fall back to loading sample posts
-            return this.createSamplePosts();
+            const data = await response.json();
             
+            // Check if the index.json has the expected format (array of post metadata)
+            if (!Array.isArray(data)) {
+                console.error('Invalid index.json format: expected an array of posts');
+                return [];
+            }
+            
+            // Process each blog post in parallel
+            const posts = await Promise.all(
+                data.map(post => this.processBlogFile(post))
+            );
+            
+            // Sort posts by date (newest first)
+            return posts.sort((a, b) => new Date(b.date) - new Date(a.date));
         } catch (error) {
-            console.error('Error fetching blog posts from local directory:', error);
-            return this.createSamplePosts();
+            console.error('Error fetching blog posts:', error);
+            return [];
         }
-    }
-    
-    /**
-     * Create sample blog posts as a fallback when loading fails
-     * @returns {Array} Array of sample blog post objects
-     */
-    createSamplePosts() {
-        return [
-            {
-                id: 'sample-post-1',
-                title: 'Sample Blog Post',
-                date: new Date().toLocaleDateString(),
-                author: 'Demo Author',
-                category: 'Samples',
-                excerpt: 'This is a sample blog post that appears when actual posts cannot be loaded.',
-                image: 'images/blog-placeholder.jpg',
-                tags: ['sample', 'demo'],
-                slug: 'sample-blog-post',
-                path: '#',
-                content: `
-                    <h2>Sample Blog Post</h2>
-                    <p>This is a sample blog post that appears when actual blog posts cannot be loaded from your server.</p>
-                    <p>Possible reasons your blog posts aren't loading:</p>
-                    <ul>
-                        <li>The blog posts files don't exist in the expected location</li>
-                        <li>There's a path issue in how files are being referenced</li>
-                        <li>The server is blocking access to the files</li>
-                        <li>There might be CORS issues if testing locally</li>
-                    </ul>
-                    <p>Check the browser console for more specific error messages.</p>
-                `
-            },
-            {
-                id: 'sample-post-2',
-                title: 'Getting Started With Blogging',
-                date: new Date(Date.now() - 86400000).toLocaleDateString(),
-                author: 'Demo Author',
-                category: 'Tutorials',
-                excerpt: 'Learn how to set up your blog and create your first posts.',
-                image: 'images/blog-placeholder.jpg',
-                tags: ['tutorial', 'blogging'],
-                slug: 'getting-started',
-                path: '#',
-                content: `
-                    <h2>Getting Started With Blogging</h2>
-                    <p>This is another sample blog post that appears when actual posts cannot be loaded.</p>
-                    <p>To fix the blog loading issue:</p>
-                    <ol>
-                        <li>Make sure your blog post files exist in the 'blogs' directory</li>
-                        <li>Verify the index.json file exists and contains the correct paths</li>
-                        <li>Check the browser console for specific error messages</li>
-                        <li>Try using absolute paths instead of relative paths</li>
-                    </ol>
-                    <p>Once fixed, your actual blog posts will appear instead of these samples.</p>
-                `
-            }
-        ];
     }
 
     /**
@@ -545,26 +468,28 @@ class LocalBlogLoader {
             let filePath = file.path;
             let fullUrl;
             
-            // Create proper GitHub Pages URL
+            // Create GitHub Pages URL
             if (window.location.hostname.includes('github.io')) {
-                // On GitHub Pages - construct the absolute URL
-                const repoBase = window.location.origin;
+                // Direct fetch from GitHub raw content
+                const ghUsername = 'gourikartha';
+                const ghRepo = 'gourikartha.github.io';
                 
-                // If the path starts with /, remove it
+                // Remove leading slash if present
                 if (filePath.startsWith('/')) {
                     filePath = filePath.substring(1);
                 }
                 
-                fullUrl = `${repoBase}/${filePath}`;
+                // Use raw.githubusercontent.com for direct content access
+                fullUrl = `https://raw.githubusercontent.com/${ghUsername}/${ghRepo}/main/${filePath}`;
+                console.log(`Trying to fetch from GitHub raw content: ${fullUrl}`);
             } else {
                 // Local development
                 if (filePath.startsWith('/')) {
                     filePath = filePath.substring(1);
                 }
                 fullUrl = new URL(filePath, window.location.origin).href;
+                console.log(`Trying to fetch locally: ${fullUrl}`);
             }
-            
-            console.log(`Trying to fetch: ${fullUrl}`);
             
             const response = await fetch(fullUrl);
             
