@@ -1,11 +1,20 @@
-{
-  "posts": [
-    {
-      "name": "exploring-kochi-in-a-day-a-journey-through-scenic-gems.md",
-      "path": "blogs/exploring-kochi-in-a-day-a-journey-through-scenic-gems.md",
-      "title": "Exploring Kochi in a day; A journey through the scenic gems",
-      "date": "2025-05-07",
-      "author": "Gouri Kartha"
-    }
-  ]
-} 
+[
+  {
+    "name": "exploring-kochi-in-a-day-a-journey-through-scenic-gems.md",
+    "path": "blogs/exploring-kochi-in-a-day-a-journey-through-scenic-gems.md",
+    "title": "Exploring Kochi in a day; A journey through the scenic gems",
+    "date": "2025-01-16",
+    "author": "Gouri Kartha",
+    "slug": "exploring-kochi-in-a-day-a-journey-through-scenic-gems",
+    "excerpt": "A comprehensive guide to exploring the beautiful city of Kochi in a single day."
+  },
+  {
+    "name": "the-holiday-squeeze.md",
+    "path": "blogs/the-holiday-squeeze.md",
+    "title": "The Holiday Squeeze: Understanding the Impact of Ticket Price Hikes in Kerala's Tourism Sector",
+    "date": "2025-01-31",
+    "author": "Gouri Kartha",
+    "slug": "the-holiday-squeeze",
+    "excerpt": "A detailed analysis of ticket price hikes during the holiday season in Kerala and their impact on tourists and locals."
+  }
+] 
