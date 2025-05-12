@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/minimalist.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .error-container {
+            text-align: center;
+            padding: 100px 0;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .error-code {
+            font-size: 8rem;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .error-message {
+            font-size: 1.5rem;
+            margin-bottom: 40px;
+            color: var(--dark-color);
+        }
+        
+        .error-actions {
+            margin-top: 40px;
+        }
+        
+        .error-actions .btn {
+            margin: 0 10px;
+        }
+
+        /* Minimal footer */
+        .minimal-footer {
+            padding: 30px 0;
+            text-align: center;
+        }
+
+        .social-links {
+            margin-bottom: 20px;
+        }
+
+        .minimal-copyright {
+            color: #aaa;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="logo">Gouri Kartha</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="blogs.html">Blogs</a></li>
+                    <li><a href="poems.html">Poems</a></li>
+                    <li><a href="about.html">About</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="error-container">
+        <div class="error-code fade-in">404</div>
+        <h1 class="error-message slide-up">Page Not Found</h1>
+        <p>Oops! The page you're looking for doesn't exist or has been moved.</p>
+        <div class="error-actions">
+            <a href="index.html" class="btn"><i class="fas fa-home"></i> Go to Homepage</a>
+            <a href="blogs.html" class="btn"><i class="fas fa-book"></i> Browse Blogs</a>
+        </div>
+    </section>
+
+    <div class="minimal-footer">
+        <div class="social-links">
+            <a href="https://www.instagram.com/shaa.iraa._/" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+            <a href="https://www.linkedin.com/in/gouri-kartha/" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+            <a href="mailto:gourikartha@gmail.com" aria-label="Email"><i class="far fa-envelope"></i></a>
+        </div>
+        <div class="minimal-copyright">
+            &copy; 2025 Gouri Kartha. All rights reserved.
+        </div>
+    </div>
+
+    <script>
+        // Check if this is a blog post URL and redirect to the blog page with the correct slug
+        document.addEventListener('DOMContentLoaded', () => {
+            const path = window.location.pathname;
+            const lastSegment = path.split('/').pop();
+            
+            // If it looks like a blog post URL (no file extension)
+            if (lastSegment && !lastSegment.includes('.') && lastSegment !== '404') {
+                // Redirect to the blog page with the slug
+                window.location.href = `/blog.html?slug=${lastSegment}`;
+            }
+        });
+    </script>
+</body>
+</html> 

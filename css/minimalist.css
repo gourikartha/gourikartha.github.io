@@ -1,0 +1,207 @@
+/* Minimalist Theme for Landing Page */
+.minimalist-home {
+    background-color: #ffffff;
+    color: #222;
+    font-family: 'Georgia', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+.minimalist-main {
+    text-align: center;
+    max-width: 90%;
+    width: 800px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+}
+
+.tagline {
+    font-style: italic;
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+    color: #555;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+}
+
+.site-title {
+    font-size: 4rem;
+    margin: 20px 0 40px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: #000;
+    text-transform: capitalize;
+}
+
+.logo-container {
+    margin: 20px 0 40px;
+    max-width: 250px;
+    width: 100%;
+    height: auto;
+}
+
+.main-logo {
+    width: 100%;
+    height: auto;
+    border-radius: 50%;
+    transition: transform 0.5s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    object-fit: cover;
+    aspect-ratio: 1/1;
+}
+
+.main-logo:hover {
+    transform: scale(1.05);
+}
+
+.social-links {
+    margin: 30px 0;
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+}
+
+.social-links a {
+    color: #333;
+    font-size: 1.5rem;
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.social-links a:hover {
+    color: var(--primary-color);
+    transform: translateY(-3px);
+}
+
+.minimalist-nav {
+    margin: 30px 0;
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+.nav-link {
+    text-decoration: none;
+    color: #333;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 10px 0;
+    position: relative;
+    transition: color 0.3s ease;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 0;
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+.nav-link:hover {
+    color: var(--primary-color);
+}
+
+.nav-link:hover::after {
+    width: 100%;
+}
+
+.minimalist-footer {
+    padding: 20px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #777;
+    width: 100%;
+}
+
+/* Minimal footer */
+.minimal-footer {
+    padding: 30px 0;
+    text-align: center;
+    width: 100%;
+}
+
+.minimal-copyright {
+    color: #aaa;
+    font-size: 0.8rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .site-title {
+        font-size: 3rem;
+    }
+    
+    .tagline {
+        font-size: 1rem;
+    }
+    
+    .logo-container {
+        max-width: 200px;
+    }
+    
+    .minimalist-nav {
+        gap: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .minimalist-main {
+        padding: 20px 15px;
+        justify-content: flex-start;
+        margin-top: 20px;
+    }
+    
+    .site-title {
+        font-size: 2.2rem;
+        margin: 10px 0 20px;
+        word-break: break-word;
+    }
+    
+    .tagline {
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+    }
+    
+    .nav-link {
+        font-size: 0.9rem;
+        padding: 8px 10px;
+    }
+    
+    .logo-container {
+        max-width: 120px;
+        margin: 10px 0 20px;
+    }
+    
+    .social-links {
+        margin: 15px 0;
+        gap: 15px;
+    }
+    
+    .social-links a {
+        font-size: 1.2rem;
+    }
+    
+    .minimalist-nav {
+        gap: 10px;
+        margin: 15px 0;
+    }
+    
+    .minimal-footer {
+        padding: 15px 0;
+    }
+} 

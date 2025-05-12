@@ -1,0 +1,22 @@
+{
+  "posts": [
+    {
+      "name": "shameful-piece-of-flesh.md",
+      "path": "poems/shameful-piece-of-flesh.md",
+      "title": "The Shameful Piece of Flesh",
+      "date": "2025-08-15",
+      "author": "Gouri Kartha",
+      "slug": "shameful-piece-of-flesh",
+      "excerpt": "A poem on the shame of being a piece of flesh."
+    },
+    {
+      "name": "birth-battle.md",
+      "path": "poems/birth-battle.md",
+      "title": "Birth Battle",
+      "date": "2025-09-21",
+      "author": "Gouri Kartha",
+      "slug": "birth-battle",
+      "excerpt": "A poem on the birth of a child."
+    }
+  ]
+} 

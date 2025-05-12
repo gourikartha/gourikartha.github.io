@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blogs</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/minimalist.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Verdana, sans-serif;
+        }
+        
+        body {
+            line-height: 1.6;
+            color: #333;
+            background-color: #fafafa;
+        }
+
+        header .container {
+            max-width: 1200px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+        
+        .blog-container {
+            max-width: 700px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .blog-header {
+            margin-bottom: 20px;
+        }
+        
+        .blog-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #222;
+        }
+        
+        .blog-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            color: #777;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .blog-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .blog-meta i {
+            color: #aaa;
+            font-size: 0.95rem;
+        }
+        
+        .blog-content {
+            line-height: 1.7;
+            color: #444;
+        }
+        
+        .blog-content p {
+            margin-bottom: 1.5rem;
+        }
+        
+        .blog-content h2 {
+            font-size: 1.4rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        
+        .blog-content h3 {
+            font-size: 1.2rem;
+            margin-top: 1.8rem;
+            margin-bottom: 0.8rem;
+            color: #333;
+        }
+        
+        .blog-content a {
+            color: #3498db;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border 0.2s ease;
+        }
+        
+        .blog-content a:hover {
+            border-bottom: 1px solid #3498db;
+        }
+        
+        .blog-content ul, .blog-content ol {
+            margin-bottom: 1.5rem;
+            padding-left: 1.5rem;
+        }
+        
+        .blog-content li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .blog-content img {
+            max-width: 100%;
+            height: auto;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+        
+        .blog-content blockquote {
+            margin: 1.5rem 0;
+            padding: 1rem 1.5rem;
+            border-left: 3px solid #3498db;
+            background-color: #f8f9fa;
+            font-style: italic;
+            color: #555;
+        }
+        
+        .blog-content pre {
+            background-color: #f5f7f9;
+            border-radius: 5px;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+            font-family: monospace;
+        }
+        
+        .blog-content code {
+            background-color: #f5f7f9;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        /* Loading and error styles */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+            background-color: #fff8f8;
+            border: 1px solid #fee;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .error h3 {
+            color: #c33;
+            margin-bottom: 10px;
+        }
+
+        .error p {
+            margin-bottom: 10px;
+        }
+
+        .error .hint {
+            font-size: 0.9rem;
+            color: #999;
+            max-width: 600px;
+            margin: 10px auto;
+        }
+
+        /* Debug section */
+        .debug-section {
+            margin-top: 20px;
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #333;
+        }
+
+        .debug-section h3 {
+            margin-bottom: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .debug-section pre {
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* Minimal footer */
+        .minimal-footer {
+            padding: 25px 0;
+            text-align: center;
+            border-top: 1px solid #eee;
+            background-color: white;
+        }
+
+        .social-links {
+            margin-bottom: 15px;
+        }
+        
+        .social-links a {
+            color: #666;
+            margin: 0 10px;
+            font-size: 1.1rem;
+            transition: color 0.2s ease;
+        }
+        
+        .social-links a:hover {
+            color: #3498db;
+        }
+
+        .minimal-copyright {
+            color: #999;
+            font-size: 0.8rem;
+        }
+        
+        .blog-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+        }
+        
+        .featured-image {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="logo">Gouri Kartha</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="blogs.html" class="active">Blogs</a></li>
+                    <li><a href="poems.html">Poems</a></li>
+                    <li><a href="about.html">About</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="container" style="margin-top: 30px;">
+            <div class="blog-container">
+                <div class="blog-header">
+                    <h1 id="blog-title" class="blog-title">Blog Title</h1>
+                    <div class="blog-meta">
+                        <span><i class="far fa-calendar"></i> <span id="blog-date">Date</span></span>
+                        <span><i class="far fa-user"></i> <span id="blog-author">Author</span></span>
+                    </div>
+                </div>
+                
+                <img id="blog-image" class="featured-image" src="images/blog-placeholder.jpg" alt="Blog Post">
+                
+                <div id="blog-content" class="blog-content">
+                    <div class="loading">Loading blog post...</div>
+                </div>
+                
+                <div class="blog-nav">
+                    <div id="prev-post"></div>
+                    <div id="next-post"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="minimal-footer">
+        <div class="social-links">
+            <a href="https://www.instagram.com/shaa.iraa._/" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+            <a href="https://www.linkedin.com/in/gouri-kartha/" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+            <a href="mailto:gourikartha@gmail.com" aria-label="Email"><i class="far fa-envelope"></i></a>
+        </div>
+        <div class="minimal-copyright">
+            &copy; 2025 Gouri Kartha. All rights reserved.
+        </div>
+    </div>
+
+    <script src="js/github-blog-loader.js"></script>
+    <script src="js/blog-view.js"></script>
+</body>
+</html> 
