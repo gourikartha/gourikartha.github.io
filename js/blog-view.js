@@ -176,7 +176,7 @@ async function loadBlogPost() {
 async function fetchBlogPosts() {
     try {
         // Use the blog loader to fetch posts
-        const posts = await blogLoader.fetchBlogPosts();
+        const posts = await blogLoader.fetchPosts();
         
         // For each post, make sure it has a slug
         posts.forEach(post => {
