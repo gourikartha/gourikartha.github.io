@@ -200,14 +200,27 @@ async function fetchPoemContent(post) {
     try {
         // Handle both relative and absolute paths
         let filePath = post.path;
+        let fullUrl;
         
-        // If the path is absolute (starts with /), make it relative to the current domain
-        if (filePath.startsWith('/')) {
-            filePath = filePath.substring(1); // Remove the leading slash
+        // Create proper GitHub Pages URL
+        if (window.location.hostname.includes('github.io')) {
+            // On GitHub Pages - construct the absolute URL
+            const repoBase = window.location.origin;
+            
+            // If the path starts with /, remove it
+            if (filePath.startsWith('/')) {
+                filePath = filePath.substring(1);
+            }
+            
+            fullUrl = `${repoBase}/${filePath}`;
+        } else {
+            // Local development
+            if (filePath.startsWith('/')) {
+                filePath = filePath.substring(1);
+            }
+            fullUrl = new URL(filePath, window.location.origin).href;
         }
         
-        // For GitHub Pages compatibility, get the full URL
-        const fullUrl = new URL(filePath, window.location.origin).href;
         console.log(`Trying to fetch poem: ${fullUrl}`);
         
         // Try to fetch the actual content
