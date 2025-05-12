@@ -125,7 +125,7 @@ class GitHubBlogLoader {
 
     /**
      * Process an HTML blog file
-     * @param {Object} file - The file object from GitHub API
+     * @param {Object} file - The file info object
      * @param {string} html - The HTML content
      * @returns {Object} Blog post object
      */
@@ -150,10 +150,10 @@ class GitHubBlogLoader {
         
         // Create a blog post object
         return {
-            id: file.sha,
+            id: file.id || file.sha || `file-${Date.now()}`,
             name: name,  // Ensure name is included
             title: this.getMetaContent(doc, 'blog-title') || (name ? name.replace(/\.html$/, '').replace(/-/g, ' ') : 'Untitled'),
-            date: this.getMetaContent(doc, 'blog-date') || new Date().toLocaleDateString(),
+            date: this.getMetaContent(doc, 'blog-date') || file.date || new Date().toLocaleDateString(),
             author: this.getMetaContent(doc, 'blog-author') || 'Anonymous',
             category: this.getMetaContent(doc, 'blog-category') || 'Uncategorized',
             excerpt: this.getMetaContent(doc, 'blog-excerpt') || this.generateExcerpt(doc),
@@ -161,14 +161,13 @@ class GitHubBlogLoader {
             tags: this.getMetaContent(doc, 'blog-tags') ? this.getMetaContent(doc, 'blog-tags').split(',').map(tag => tag.trim()) : [],
             slug: slug,
             path: file.path,
-            url: file.download_url,
             content: doc.querySelector('article') ? doc.querySelector('article').innerHTML : html
         };
     }
 
     /**
      * Process a Markdown blog file
-     * @param {Object} file - The file object from GitHub API
+     * @param {Object} file - The file info object
      * @param {string} markdown - The Markdown content
      * @returns {Object} Blog post object
      */
@@ -180,22 +179,29 @@ class GitHubBlogLoader {
         // Convert markdown to HTML
         const htmlContent = `<div class="markdown-content">${this.simpleMarkdownToHtml(content)}</div>`;
         
-        const result = {
-            id: file.sha,
-            title: frontmatter['blog-title'] || file.name.replace(/\.md$/, '').replace(/-/g, ' '),
-            date: frontmatter['blog-date'] || new Date().toLocaleDateString(),
+        // Make sure we have a name - extract from path if needed
+        let name = file.name;
+        if (!name && file.path) {
+            // Extract filename from path
+            const pathParts = file.path.split('/');
+            name = pathParts[pathParts.length - 1];
+            console.log(`Extracted name from path: ${name}`);
+        }
+        
+        return {
+            id: file.id || file.sha || `file-${Date.now()}`,
+            name: name,  // Ensure name is included
+            title: frontmatter['blog-title'] || (name ? name.replace(/\.md$/, '').replace(/-/g, ' ') : 'Untitled'),
+            date: frontmatter['blog-date'] || file.date || new Date().toLocaleDateString(),
             author: frontmatter['blog-author'] || 'Anonymous',
             category: frontmatter['blog-category'] || 'Uncategorized',
             excerpt: frontmatter['blog-excerpt'] || this.generateExcerptFromMarkdown(content),
             image: frontmatter['blog-image'] || 'images/blog-placeholder.jpg',
             tags: frontmatter['blog-tags'] ? frontmatter['blog-tags'].split(',').map(tag => tag.trim()) : [],
-            slug: frontmatter['blog-slug'] || file.name.replace(/\.md$/, ''),
+            slug: frontmatter['blog-slug'] || (name ? name.replace(/\.md$/, '') : ''),
             path: file.path,
-            url: file.download_url,
             content: htmlContent
         };
-        
-        return result;
     }
 
     /**
@@ -391,30 +397,66 @@ class LocalBlogLoader {
             let indexUrl;
 
             if (isGitHubPages) {
-                // On GitHub Pages, use raw githubusercontent URL to fetch index.json
+                // On GitHub Pages, try a few different URL patterns
                 const ghUsername = 'gourikartha';
                 const ghRepo = 'gourikartha.github.io';
-                indexUrl = `https://raw.githubusercontent.com/${ghUsername}/${ghRepo}/main/${this.path}/index.json`;
+                
+                // First try without /main/ since GitHub Pages serves from the root
+                indexUrl = `https://${ghUsername}.github.io/${this.path}/index.json`;
+                console.log(`Trying GitHub Pages URL: ${indexUrl}`);
             } else {
                 // Local development
                 indexUrl = new URL(`${this.path}/index.json`, window.location.origin).href;
+                console.log(`Trying local URL: ${indexUrl}`);
             }
 
-            console.log(`Fetching blog index from: ${indexUrl}`);
-            const response = await fetch(indexUrl);
+            console.log(`Fetching index from: ${indexUrl}`);
+            let response = await fetch(indexUrl);
+            
+            // If first GitHub Pages URL fails, try raw.githubusercontent.com
+            if (!response.ok && isGitHubPages) {
+                const ghUsername = 'gourikartha';
+                const ghRepo = 'gourikartha.github.io';
+                const rawUrl = `https://raw.githubusercontent.com/${ghUsername}/${ghRepo}/main/${this.path}/index.json`;
+                console.log(`First attempt failed, trying raw URL: ${rawUrl}`);
+                response = await fetch(rawUrl);
+            }
             
             if (!response.ok) {
                 console.error(`Failed to fetch ${this.path} index: ${response.status} ${response.statusText}`);
+                console.error(`URL attempted: ${indexUrl}`);
                 throw new Error(`Failed to fetch ${this.path} index: ${response.status} ${response.statusText}`);
             }
             
-            const data = await response.json();
+            // Get the response text first for debugging
+            const responseText = await response.text();
+            console.log(`Response from ${indexUrl}:`, responseText);
             
-            // Check if the index.json has the expected format (array of post metadata)
-            if (!Array.isArray(data)) {
-                console.error('Invalid index.json format: expected an array of posts');
-                return [];
+            // Parse the JSON
+            let data;
+            try {
+                data = JSON.parse(responseText);
+                
+                // Check the format - handle both array and object with "posts" property
+                if (!Array.isArray(data) && data && typeof data === 'object' && Array.isArray(data.posts)) {
+                    console.log('Found posts property in JSON, using that array');
+                    data = data.posts;
+                }
+                
+            } catch (parseError) {
+                console.error(`Error parsing JSON from ${indexUrl}:`, parseError);
+                console.error('Response text:', responseText);
+                throw new Error(`Invalid JSON in ${this.path}/index.json: ${parseError.message}`);
             }
+            
+            // Check if the data is in the expected format (array of post metadata)
+            if (!Array.isArray(data)) {
+                console.error(`Invalid index.json format from ${indexUrl}: expected an array or object with posts array, got:`, data);
+                throw new Error(`Invalid index.json format: expected an array of posts, got ${typeof data}`);
+            }
+            
+            // Log the data for debugging
+            console.log(`Successfully loaded ${data.length} entries from ${indexUrl}:`, data);
             
             // Process each blog post in parallel
             const posts = await Promise.all(
@@ -425,6 +467,7 @@ class LocalBlogLoader {
             return posts.sort((a, b) => new Date(b.date) - new Date(a.date));
         } catch (error) {
             console.error(`Error fetching ${this.path} posts:`, error);
+            // Return empty array instead of throwing to prevent page break
             return [];
         }
     }
@@ -547,7 +590,7 @@ class LocalBlogLoader {
         
         // Create a blog post object
         return {
-            id: file.id,
+            id: file.id || file.sha || `file-${Date.now()}`,
             name: name,  // Ensure name is included
             title: this.getMetaContent(doc, 'blog-title') || (name ? name.replace(/\.html$/, '').replace(/-/g, ' ') : 'Untitled'),
             date: this.getMetaContent(doc, 'blog-date') || file.date || new Date().toLocaleDateString(),
@@ -586,7 +629,7 @@ class LocalBlogLoader {
         }
         
         return {
-            id: file.id,
+            id: file.id || file.sha || `file-${Date.now()}`,
             name: name,  // Ensure name is included
             title: frontmatter['blog-title'] || (name ? name.replace(/\.md$/, '').replace(/-/g, ' ') : 'Untitled'),
             date: frontmatter['blog-date'] || file.date || new Date().toLocaleDateString(),
