@@ -29,6 +29,42 @@ class GitHubBlogLoader {
      */
     async fetchBlogPosts() {
         try {
+            // For GitHub Pages, try to use the index.json file first
+            if (this.repo.endsWith('.github.io')) {
+                try {
+                    // Construct the path to the index.json file
+                    const indexPath = `${this.path}/index.json`;
+                    const indexUrl = new URL(indexPath, window.location.origin).href;
+                    
+                    console.log(`Trying to fetch index file from: ${indexUrl}`);
+                    const indexResponse = await fetch(indexUrl);
+                    
+                    if (!indexResponse.ok) {
+                        console.error(`Failed to load index.json: ${indexResponse.status} ${indexResponse.statusText}`);
+                        throw new Error(`Index file not found: ${indexUrl}`);
+                    }
+                    
+                    const indexData = await indexResponse.json();
+                    
+                    if (!indexData.posts || !Array.isArray(indexData.posts) || indexData.posts.length === 0) {
+                        console.error('Invalid index.json format or no posts found');
+                        throw new Error('No posts found in index.json');
+                    }
+                    
+                    // Process each post in the index
+                    const posts = await Promise.all(
+                        indexData.posts.map(post => this.processBlogFile(post))
+                    );
+                    
+                    return posts.filter(post => post !== null)
+                               .sort((a, b) => new Date(b.date) - new Date(a.date));
+                } catch (indexError) {
+                    console.error('Error loading from index.json:', indexError);
+                    // Fall back to API approach
+                }
+            }
+            
+            // Fall back to using the GitHub API
             const response = await fetch(this.apiUrl);
             
             if (!response.ok) {
@@ -61,10 +97,35 @@ class GitHubBlogLoader {
      */
     async processBlogFile(file) {
         try {
-            const response = await fetch(file.path);
+            // Handle both relative and absolute paths
+            let filePath = file.path;
+            let fullUrl;
+            
+            // Create proper GitHub Pages URL
+            if (window.location.hostname.includes('github.io')) {
+                // On GitHub Pages - construct the absolute URL
+                const repoBase = window.location.origin;
+                
+                // If the path starts with /, remove it
+                if (filePath.startsWith('/')) {
+                    filePath = filePath.substring(1);
+                }
+                
+                fullUrl = `${repoBase}/${filePath}`;
+            } else {
+                // Local development
+                if (filePath.startsWith('/')) {
+                    filePath = filePath.substring(1);
+                }
+                fullUrl = new URL(filePath, window.location.origin).href;
+            }
+            
+            console.log(`Trying to fetch: ${fullUrl}`);
+            
+            const response = await fetch(fullUrl);
             
             if (!response.ok) {
-                console.error(`Failed to fetch file ${file.path}: ${response.status} ${response.statusText}`);
+                console.error(`Failed to fetch file ${fullUrl}: ${response.status} ${response.statusText}`);
                 throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
             }
             
@@ -79,9 +140,9 @@ class GitHubBlogLoader {
             
             try {
                 if (isMarkdown) {
-                    return this.processMarkdownFile({ ...file, id, date: postDate }, content);
+                    return this.processMarkdownFile({ ...file, id, date: postDate, path: fullUrl }, content);
                 } else {
-                    return this.processHtmlFile({ ...file, id, date: postDate }, content);
+                    return this.processHtmlFile({ ...file, id, date: postDate, path: fullUrl }, content);
                 }
             } catch (processingError) {
                 console.error(`Error processing content for ${file.name}:`, processingError);
@@ -97,10 +158,11 @@ class GitHubBlogLoader {
                     image: 'images/blog-placeholder.jpg',
                     tags: [],
                     slug: file.name.replace(/\.(html|md)$/, ''),
-                    path: file.path,
+                    path: fullUrl,
                     content: `<h2>${file.title || file.name}</h2><p>Content could not be fully loaded.</p>`
                 };
             }
+            
         } catch (error) {
             console.error(`Error processing blog file ${file.name}:`, error);
             throw error;
@@ -481,14 +543,27 @@ class LocalBlogLoader {
         try {
             // Handle both relative and absolute paths
             let filePath = file.path;
+            let fullUrl;
             
-            // If the path is absolute (starts with /), make it relative to the current domain
-            if (filePath.startsWith('/')) {
-                filePath = filePath.substring(1); // Remove the leading slash
+            // Create proper GitHub Pages URL
+            if (window.location.hostname.includes('github.io')) {
+                // On GitHub Pages - construct the absolute URL
+                const repoBase = window.location.origin;
+                
+                // If the path starts with /, remove it
+                if (filePath.startsWith('/')) {
+                    filePath = filePath.substring(1);
+                }
+                
+                fullUrl = `${repoBase}/${filePath}`;
+            } else {
+                // Local development
+                if (filePath.startsWith('/')) {
+                    filePath = filePath.substring(1);
+                }
+                fullUrl = new URL(filePath, window.location.origin).href;
             }
             
-            // For GitHub Pages compatibility, get the full URL
-            const fullUrl = new URL(filePath, window.location.origin).href;
             console.log(`Trying to fetch: ${fullUrl}`);
             
             const response = await fetch(fullUrl);
