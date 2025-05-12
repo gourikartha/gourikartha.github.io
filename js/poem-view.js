@@ -198,12 +198,20 @@ async function fetchPoemPosts() {
 // Fetch the content of the poem post
 async function fetchPoemContent(post) {
     try {
+        // Handle both relative and absolute paths
+        let filePath = post.path;
         
-        // Check if it's a Markdown file
-        const isMarkdown = post.path.endsWith('.md');
+        // If the path is absolute (starts with /), make it relative to the current domain
+        if (filePath.startsWith('/')) {
+            filePath = filePath.substring(1); // Remove the leading slash
+        }
+        
+        // For GitHub Pages compatibility, get the full URL
+        const fullUrl = new URL(filePath, window.location.origin).href;
+        console.log(`Trying to fetch poem: ${fullUrl}`);
         
         // Try to fetch the actual content
-        const response = await fetch(post.path);
+        const response = await fetch(fullUrl);
         
         if (!response.ok) {
             throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
@@ -211,25 +219,14 @@ async function fetchPoemContent(post) {
         
         const content = await response.text();
         
-        // If it's a markdown file, process it differently
-        if (isMarkdown) {
-            // Extract frontmatter
-            const frontmatterRegex = /^---\n([\s\S]*?)\n---\n/;
-            const match = content.match(frontmatterRegex);
-            
-            if (match) {
-                const mainContent = content.replace(frontmatterRegex, '');
-                
-                // Simple Markdown conversion for display
-                const htmlContent = convertMarkdownToHtml(mainContent);
-                return htmlContent;
-            }
-            
-            // If no frontmatter, just convert the whole content
-            return convertMarkdownToHtml(content);
+        // Check if it's a Markdown file
+        if (post.name.endsWith('.md')) {
+            // For Markdown files, extract frontmatter and convert to HTML
+            const cleanContent = content.replace(/^---\n([\s\S]*?)\n---\n/, ''); // Remove frontmatter
+            return convertMarkdownToHtml(cleanContent);
         }
         
-        // Process HTML as usual
+        // For HTML files, try to extract the content
         const parser = new DOMParser();
         const doc = parser.parseFromString(content, 'text/html');
         
