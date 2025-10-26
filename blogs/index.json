@@ -43,5 +43,14 @@
     "author": "Gouri Kartha",
     "slug": "wanderlust-and-wellness",
     "excerpt": "Exploring the joy of travelling and its effects on mental health"
+  },
+  {
+    "name": "theyyam.md",
+    "path": "blogs/theyyam.md",
+    "title": "Theyyam: The soul of cultural tourism in Kerala",
+    "date": "2025-07-27",
+    "author": "Gouri Kartha",
+    "slug": "theyyam",
+    "excerpt": "Exploring the art of Theyyam"
   }
 ] 
