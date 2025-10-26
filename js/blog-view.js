@@ -200,21 +200,16 @@ async function fetchBlogPosts() {
 function fixImagePaths(html) {
     if (!html) return html;
     
-    console.log('Original HTML for image fixing:', html);
-    
     // Fix relative image paths that start with ../images/ or ./images/
     let fixedHtml = html
         .replace(/src="\.\.\/images\//g, 'src="images/')
         .replace(/src="\.\/images\//g, 'src="images/')
         .replace(/src="images\//g, 'src="images/'); // Ensure consistent path format
     
-    console.log('After basic image path fixing:', fixedHtml);
-    
     // For GitHub Pages, we need to ensure the base path is correct
     if (window.location.hostname.includes('github.io')) {
         // If we're on GitHub Pages, ensure images point to the correct base
         fixedHtml = fixedHtml.replace(/src="images\//g, 'src="./images/');
-        console.log('After GitHub Pages image path fixing:', fixedHtml);
     }
     
     return fixedHtml;
@@ -266,15 +261,36 @@ async function fetchBlogContent(post) {
         let filePath = post.path;
         let fullUrl;
         
+        console.log('Original filePath from post:', filePath);
+        console.log('Post object:', post);
+        
         // Create GitHub Pages URL
         if (window.location.hostname.includes('github.io')) {
             // Direct fetch from GitHub raw content
             const ghUsername = 'gourikartha';
             const ghRepo = 'gourikartha.github.io';
             
-            // Remove leading slash if present
+            // Clean the filePath - remove any leading slashes or full URLs
             if (filePath.startsWith('/')) {
                 filePath = filePath.substring(1);
+            }
+            
+            // If filePath already contains a full URL, extract just the path part
+            if (filePath.startsWith('http')) {
+                console.warn('filePath contains full URL, extracting path:', filePath);
+                try {
+                    const url = new URL(filePath);
+                    filePath = url.pathname.substring(1); // Remove leading slash
+                } catch (e) {
+                    console.error('Failed to parse URL from filePath:', filePath);
+                    throw new Error('Invalid filePath: cannot parse URL');
+                }
+            }
+            
+            // Ensure we have a clean relative path
+            if (!filePath || filePath.includes('://')) {
+                console.error('Invalid filePath after cleaning:', filePath);
+                throw new Error('Invalid filePath: not a valid relative path');
             }
             
             // Use raw.githubusercontent.com for direct content access
@@ -302,14 +318,11 @@ async function fetchBlogContent(post) {
         if (post.path.endsWith('.md')) {
             // Remove frontmatter and convert to HTML
             const cleanContent = content.replace(/---[\s\S]*?---/, '').trim();
-            console.log('Markdown content before parsing:', cleanContent);
             
             const html = marked.parse(cleanContent);
-            console.log('HTML after markdown parsing:', html);
             
             // Fix image paths in the HTML content
             const fixedHtml = fixImagePaths(html);
-            console.log('HTML after fixing image paths:', fixedHtml);
             
             return fixedHtml;
         }
