@@ -61,5 +61,14 @@
     "author": "Gouri Kartha",
     "slug": "smart-tourism",
     "excerpt": "Deep dive into smart tourism in Kerala"
+  },
+  {
+    "name": "idukki.md",
+    "path": "blogs/idukki.md",
+    "title": "‘Idukki’: Where nature paints its masterpiece",
+    "date": "2025-07-30",
+    "author": "Gouri Kartha",
+    "slug": "idukki",
+    "excerpt": "Exploring the beauty of Idukki"
   }
 ] 
