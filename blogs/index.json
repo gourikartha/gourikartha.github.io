@@ -52,5 +52,14 @@
     "author": "Gouri Kartha",
     "slug": "theyyam",
     "excerpt": "Exploring the art of Theyyam"
+  },
+  {
+    "name": "smart-tourism.md",
+    "path": "blogs/smart-tourism.md",
+    "title": "Theyyam: The soul of cultural tourism in Kerala",
+    "date": "2025-07-30",
+    "author": "Gouri Kartha",
+    "slug": "smart-tourism",
+    "excerpt": "Deep dive into smart tourism in Kerala"
   }
 ] 
