@@ -262,47 +262,34 @@ async function fetchBlogContent(post) {
         let fullUrl;
         
         console.log('Original filePath from post:', filePath);
-        console.log('Post object:', post);
         
-        // Create GitHub Pages URL
-        if (window.location.hostname.includes('github.io')) {
-            // Direct fetch from GitHub raw content
-            const ghUsername = 'gourikartha';
-            const ghRepo = 'gourikartha.github.io';
-            
-            // Clean the filePath - remove any leading slashes or full URLs
-            if (filePath.startsWith('/')) {
-                filePath = filePath.substring(1);
-            }
-            
-            // If filePath already contains a full URL, extract just the path part
-            if (filePath.startsWith('http')) {
-                console.warn('filePath contains full URL, extracting path:', filePath);
-                try {
-                    const url = new URL(filePath);
-                    filePath = url.pathname.substring(1); // Remove leading slash
-                } catch (e) {
-                    console.error('Failed to parse URL from filePath:', filePath);
-                    throw new Error('Invalid filePath: cannot parse URL');
-                }
-            }
-            
-            // Ensure we have a clean relative path
-            if (!filePath || filePath.includes('://')) {
-                console.error('Invalid filePath after cleaning:', filePath);
-                throw new Error('Invalid filePath: not a valid relative path');
-            }
-            
-            // Use raw.githubusercontent.com for direct content access
-            fullUrl = `https://raw.githubusercontent.com/${ghUsername}/${ghRepo}/main/${filePath}`;
-            console.log(`Trying to fetch blog from GitHub raw content: ${fullUrl}`);
+        // Check if filePath is already a full URL
+        if (filePath.startsWith('http')) {
+            // filePath is already a full URL, use it directly
+            fullUrl = filePath;
+            console.log('Using filePath as full URL:', fullUrl);
         } else {
-            // Local development
-            if (filePath.startsWith('/')) {
-                filePath = filePath.substring(1);
+            // filePath is a relative path, construct the full URL
+            if (window.location.hostname.includes('github.io')) {
+                // GitHub Pages - construct raw content URL
+                const ghUsername = 'gourikartha';
+                const ghRepo = 'gourikartha.github.io';
+                
+                // Clean the filePath - remove any leading slashes
+                if (filePath.startsWith('/')) {
+                    filePath = filePath.substring(1);
+                }
+                
+                fullUrl = `https://raw.githubusercontent.com/${ghUsername}/${ghRepo}/main/${filePath}`;
+                console.log(`Constructed GitHub raw URL: ${fullUrl}`);
+            } else {
+                // Local development
+                if (filePath.startsWith('/')) {
+                    filePath = filePath.substring(1);
+                }
+                fullUrl = new URL(filePath, window.location.origin).href;
+                console.log(`Constructed local URL: ${fullUrl}`);
             }
-            fullUrl = new URL(filePath, window.location.origin).href;
-            console.log(`Trying to fetch blog locally: ${fullUrl}`);
         }
         
         const response = await fetch(fullUrl);
