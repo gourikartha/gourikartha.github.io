@@ -34,5 +34,14 @@
     "author": "Gouri Kartha",
     "slug": "flavours-of-tradition",
     "excerpt": "Podcast on Flavors of tradition"
+  },
+  {
+    "name": "wanderlust-and-wellness.md",
+    "path": "blogs/wanderlust-and-wellness.md",
+    "title": "Wanderlust and Wellness: How Traveling Transforms Mental Health",
+    "date": "2025-07-17",
+    "author": "Gouri Kartha",
+    "slug": "wanderlust-and-wellness",
+    "excerpt": "Exploring the joy of travelling and its effects on mental health"
   }
 ] 
