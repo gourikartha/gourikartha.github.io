@@ -127,32 +127,31 @@ async function loadBlogPost() {
         
         // Set featured image
         if (currentPost.image) {
-            blogImage.src = currentPost.image;
+            // Fix the image path for the featured image
+            const fixedImagePath = fixImagePaths(`<img src="${currentPost.image}">`).match(/src="([^"]+)"/)?.[1] || currentPost.image;
+            blogImage.src = fixedImagePath;
             blogImage.alt = currentPost.title;
             blogImage.style.display = 'block';
         }
         
-        // Display the blog content
-        if (currentPost.content) {
-            blogContent.innerHTML = currentPost.content;
-        } else {
-            // Try to fetch the content directly from the file
-            try {
-                const content = await fetchBlogContent(currentPost);
-                if (content) {
-                    blogContent.innerHTML = content;
-                } else {
-                    blogContent.innerHTML = '<p>Failed to load blog content. Please try again later.</p>';
-                }
-            } catch (error) {
-                console.error('Error loading blog content:', error);
-                blogContent.innerHTML = `
-                    <div class="error">
-                        <h3>Unable to Load Content</h3>
-                        <p class="hint">There was an error loading the blog content: ${error.message}</p>
-                    </div>
-                `;
+        // Always fetch content directly from the file to get the latest content
+        try {
+            const content = await fetchBlogContent(currentPost);
+            if (content) {
+                blogContent.innerHTML = content;
+                // Process images in the content
+                processImagesInContent();
+            } else {
+                blogContent.innerHTML = '<p>Failed to load blog content. Please try again later.</p>';
             }
+        } catch (error) {
+            console.error('Error loading blog content:', error);
+            blogContent.innerHTML = `
+                <div class="error">
+                    <h3>Unable to Load Content</h3>
+                    <p class="hint">There was an error loading the blog content: ${error.message}</p>
+                </div>
+            `;
         }
         
         // Set up navigation to previous and next posts
@@ -191,6 +190,69 @@ async function fetchBlogPosts() {
         console.error('Error fetching blog posts:', error);
         throw error;
     }
+}
+
+/**
+ * Fix image paths in HTML content to work with both local and GitHub Pages
+ * @param {string} html - HTML content with potentially incorrect image paths
+ * @returns {string} HTML content with corrected image paths
+ */
+function fixImagePaths(html) {
+    if (!html) return html;
+    
+    console.log('Original HTML for image fixing:', html);
+    
+    // Fix relative image paths that start with ../images/ or ./images/
+    let fixedHtml = html
+        .replace(/src="\.\.\/images\//g, 'src="images/')
+        .replace(/src="\.\/images\//g, 'src="images/')
+        .replace(/src="images\//g, 'src="images/'); // Ensure consistent path format
+    
+    console.log('After basic image path fixing:', fixedHtml);
+    
+    // For GitHub Pages, we need to ensure the base path is correct
+    if (window.location.hostname.includes('github.io')) {
+        // If we're on GitHub Pages, ensure images point to the correct base
+        fixedHtml = fixedHtml.replace(/src="images\//g, 'src="./images/');
+        console.log('After GitHub Pages image path fixing:', fixedHtml);
+    }
+    
+    return fixedHtml;
+}
+
+/**
+ * Process images in the blog content for better display
+ */
+function processImagesInContent() {
+    if (!blogContent) return;
+    
+    // Find all images in the blog content
+    const images = blogContent.querySelectorAll('img');
+    
+    images.forEach(img => {
+        // Add loading="lazy" for better performance
+        img.setAttribute('loading', 'lazy');
+        
+        // Add class for styling
+        img.classList.add('blog-content-image');
+        
+        // Add error handling
+        img.addEventListener('error', function() {
+            console.warn('Failed to load image:', this.src);
+            this.style.display = 'none';
+        });
+        
+        // Add success handling
+        img.addEventListener('load', function() {
+            console.log('Successfully loaded image:', this.src);
+        });
+        
+        // Wrap single images in paragraphs with a class for better styling
+        if (img.parentNode.nodeName === 'P' && 
+            img.parentNode.childNodes.length === 1) {
+            img.parentNode.classList.add('image-container');
+        }
+    });
 }
 
 /**
@@ -240,9 +302,16 @@ async function fetchBlogContent(post) {
         if (post.path.endsWith('.md')) {
             // Remove frontmatter and convert to HTML
             const cleanContent = content.replace(/---[\s\S]*?---/, '').trim();
-            const html = marked.parse(cleanContent);
+            console.log('Markdown content before parsing:', cleanContent);
             
-            return html;
+            const html = marked.parse(cleanContent);
+            console.log('HTML after markdown parsing:', html);
+            
+            // Fix image paths in the HTML content
+            const fixedHtml = fixImagePaths(html);
+            console.log('HTML after fixing image paths:', fixedHtml);
+            
+            return fixedHtml;
         }
         
         // Process HTML files (if any)
@@ -261,7 +330,10 @@ async function fetchBlogContent(post) {
             }
         }
         
-        return htmlContent;
+        // Fix image paths in the HTML content
+        const fixedHtml = fixImagePaths(htmlContent);
+        
+        return fixedHtml;
     } catch (error) {
         console.error('Error fetching blog content:', error);
         return `<div class="error-message">
