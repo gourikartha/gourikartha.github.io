@@ -9,4 +9,5 @@ Kerala’s cuisine is a delightful blend of flavors, influenced by its rich hist
 
 *“Join me on a flavorful journey through Kerala’s delicious cuisine! In this podcast, we explore the unique spices, tasty dishes, and rich food traditions that make Kerala’s food so special. Whether you’re a foodie, a cooking enthusiast, or simply curious about Kerala’s vibrant food culture, this podcast will transport you to the heart of Kerala, one delicious dish at a time!”*
 
-![](https://www.youtube.com/watch?v=O51xfu9_4Uo)
+
+## [Podcast on flavours of tradition](https://www.youtube.com/watch?v=O51xfu9_4Uo)
